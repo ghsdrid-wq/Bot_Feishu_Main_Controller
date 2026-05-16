@@ -47,7 +47,7 @@ MySQL Database
 
 # อธิบายแต่ละไฟล์
 
-* main.py
+main.py
 
 Main Controller ของระบบ
 
@@ -61,8 +61,9 @@ GUI หลัก
 * JMS Operations
 * API Server
 
-* agent1.py
-* agent2.py
+agent1.py
+
+agent2.py
 
 DWS Agent Client
 
@@ -87,7 +88,7 @@ Endpoints:
 
 ใช้ Flask API สำหรับ communication ระหว่างระบบ
 
-* jms_api.py
+jms_api.py
 
 JMS Automation Module
 
@@ -100,7 +101,7 @@ Features:
 
 เชื่อมต่อ JMS ผ่าน Internal API
 
-* feishu_api.py
+feishu_api.py
 
 Feishu Messaging Integration
 
@@ -110,7 +111,7 @@ Features:
 * Reply Message
 * Bot Communication
 
-* config.py
+config.py
 
 Configuration Management
 
@@ -121,7 +122,7 @@ Configuration Management
 * Ngrok Command
 * Runtime Config
 
-* logger.py
+logger.py
 
 Custom Logging System
 
