@@ -44,6 +44,27 @@ DWS Agents (agent1.py / agent2.py)
      
 MySQL Database
 
+# Suggested Folder Structure
+project/
+│
+├── agents/
+│   ├── agent1.py
+│   └── agent2.py
+│
+├── controller/
+│   ├── main.py
+│   ├── controller_api.py
+│   └── feishu_api.py
+│
+├── core/
+│   ├── config.py
+│   ├── logger.py
+│   └── jms_api.py
+│
+├── logs/
+├── config.ini
+├── requirements.txt
+└── README.md
 
 # อธิบายแต่ละไฟล์
 
