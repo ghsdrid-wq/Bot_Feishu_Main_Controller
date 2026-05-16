@@ -45,7 +45,7 @@ DWS Agents (agent1.py / agent2.py)
 MySQL Database
 
 
-#อธิบายแต่ละไฟล์
+# อธิบายแต่ละไฟล์
 
 * main.py
 
