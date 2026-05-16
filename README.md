@@ -46,7 +46,8 @@ MySQL Database
 
 
 #อธิบายแต่ละไฟล์
-main.py
+
+* main.py
 
 Main Controller ของระบบ
 
