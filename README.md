@@ -60,7 +60,7 @@ project/
 ├── requirements.txt
 └── README.md
 ```
-main.py
+'main.py'
 
 Main Controller ของระบบ
 
@@ -75,9 +75,7 @@ GUI หลัก
 * API Server
 
 
-agent1.py
-
-agent2.py
+'agent1.py'/'agent2.py'
 
 DWS Agent Client
 
@@ -103,7 +101,7 @@ Endpoints:
 ใช้ Flask API สำหรับ communication ระหว่างระบบ
 
 
-jms_api.py
+'jms_api.py'
 
 JMS Automation Module
 
@@ -117,7 +115,7 @@ Features:
 เชื่อมต่อ JMS ผ่าน Internal API
 
 
-feishu_api.py
+'feishu_api.py'
 
 Feishu Messaging Integration
 
@@ -128,7 +126,7 @@ Features:
 * Bot Communication
 
 
-config.py
+'config.py'
 
 Configuration Management
 
@@ -140,14 +138,14 @@ Configuration Management
 * Runtime Config
 
 
-logger.py
+'logger.py'
 
 Custom Logging System
 
 เก็บ log แยกตามวัน
 
 รูปแบบ:
-* logs/YYYY-MM-DD.log
+'''logs/YYYY-MM-DD.log'''
 
 # Tech Stack
 ```text
