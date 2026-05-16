@@ -124,15 +124,13 @@ Database
 project/
 │
 ├── main.py
-├── agent1.py
-├── agent2.py
-├── config.py
-├── controller_api.py
-├── feishu_api.py
-├── jms_api.py
-├── logger.py
+│
 ├── requirements.txt
 ├── config.ini
+│
+├── agents/
+│   └── agent1.py.py
+│   └── agent2.py.py
 │
 ├── controller/
 │   └── controller_api.py
