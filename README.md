@@ -22,6 +22,8 @@ This project allows operators to:
 The architecture is designed for internal warehouse automation and operational support workflows.
 
 # Flow การทำงาน
+
+```text
 Feishu User
 
      ↓
@@ -41,7 +43,7 @@ Controller API
 DWS Agents (agent1.py / agent2.py)
 
      ↓
-     
+```     
 MySQL Database
 
 # อธิบายแต่ละไฟล์
