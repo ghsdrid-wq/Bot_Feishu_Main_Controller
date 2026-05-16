@@ -22,14 +22,24 @@ This project allows operators to:
 The architecture is designed for internal warehouse automation and operational support workflows.
 
 # Flow การทำงาน
-* Feishu User
+Feishu User
+
      ↓
-* Feishu Bot Webhook
+     
+Feishu Bot Webhook
+
      ↓
-* Main Controller (main.py)
+     
+Main Controller (main.py)
+
      ↓
-* Controller API
+     
+Controller API
+
      ↓
-* DWS Agents (agent1.py / agent2.py)
+     
+DWS Agents (agent1.py / agent2.py)
+
      ↓
-* MySQL Database
+     
+MySQL Database
