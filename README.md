@@ -1,2 +1,22 @@
-# Bot_Feishu_Main_Controller
-โปรแกรมควบคุมหลักในการสั่งการให้เปลี่ยนแพลนเครื่อง DWS 1 - 11 และมีหน้าที่ในการรับคำสั่งจาก Feishu Chat ผ่าน Bot เพื่อทำการรีเซ็ตรหัส JMS และ เปลี่ยนแพลน
+# DWS Central Controller & Feishu Automation Bot
+
+A Python-based automation system for managing DWS sorting plans and JMS user operations through a centralized controller and Feishu Bot integration.
+
+The system consists of:
+
+* Central Controller GUI
+* Distributed DWS Agent Clients
+* Feishu Bot Integration
+* JMS User Management Automation
+* REST API Communication
+
+This project allows operators to:
+
+* Switch DWS sorting plans remotely
+* Control multiple DWS clients simultaneously
+* Reset JMS/App passwords
+* Enable locked users
+* Monitor client status in real-time
+* Execute commands directly from Feishu chat
+
+The architecture is designed for internal warehouse automation and operational support workflows.
