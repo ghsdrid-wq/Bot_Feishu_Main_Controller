@@ -60,3 +60,72 @@ GUI หลัก
 * Monitor Client Status
 * JMS Operations
 * API Server
+
+* agent1.py
+* agent2.py
+
+DWS Agent Client
+
+หน้าที่:
+
+* รันบนเครื่อง DWS แต่ละตัว
+* เชื่อม MySQL
+* เปลี่ยน Sorting Plan
+* เปิด FastAPI รับคำสั่งจาก Controller
+* แสดงสถานะผ่าน GUI
+* System Tray Support
+
+* controller_api.py
+
+REST API สำหรับ Controller
+
+Endpoints:
+
+* status
+* switch_plan
+* refresh
+
+ใช้ Flask API สำหรับ communication ระหว่างระบบ
+
+* jms_api.py
+
+JMS Automation Module
+
+Features:
+
+* Search User
+* Reset App Password
+* Reset JMS Password
+* Enable Locked User
+
+เชื่อมต่อ JMS ผ่าน Internal API
+
+* feishu_api.py
+
+Feishu Messaging Integration
+
+Features:
+
+* Generate Tenant Access Token
+* Reply Message
+* Bot Communication
+
+* config.py
+
+Configuration Management
+
+จัดการ:
+
+* Config File
+* Feishu Credential
+* Ngrok Command
+* Runtime Config
+
+* logger.py
+
+Custom Logging System
+
+เก็บ log แยกตามวัน
+
+รูปแบบ:
+* logs/YYYY-MM-DD.log
