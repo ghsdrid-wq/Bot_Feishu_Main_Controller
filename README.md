@@ -137,12 +137,21 @@ Custom Logging System
 
 # Tech Stack
 Python
+
 Tkinter
+
 FastAPI
+
 Flask
+
 Waitress
+
 MySQL
+
 Feishu Open API
+
 Requests
+
 PyMySQL
+
 Pystray
