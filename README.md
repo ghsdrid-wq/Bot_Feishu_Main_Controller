@@ -35,8 +35,31 @@ MySQL Database
 ```
 MySQL Database
 
-# อธิบายแต่ละไฟล์
+# Suggested Folder Structure
 
+# อธิบายแต่ละไฟล์
+```text
+project/
+│
+├── agents/
+│   ├── agent1.py
+│   └── agent2.py
+│
+├── controller/
+│   ├── main.py
+│   ├── controller_api.py
+│   └── feishu_api.py
+│
+├── core/
+│   ├── config.py
+│   ├── logger.py
+│   └── jms_api.py
+│
+├── logs/
+├── config.ini
+├── requirements.txt
+└── README.md
+```
 main.py
 
 Main Controller ของระบบ
