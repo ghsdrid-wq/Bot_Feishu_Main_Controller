@@ -43,3 +43,19 @@ DWS Agents (agent1.py / agent2.py)
      ↓
      
 MySQL Database
+
+
+#อธิบายแต่ละไฟล์
+main.py
+
+Main Controller ของระบบ
+
+หน้าที่:
+
+GUI หลัก
+* จัดการ DWS Clients
+* รับคำสั่งจาก Feishu
+* Broadcast เปลี่ยน Plan
+* Monitor Client Status
+* JMS Operations
+* API Server
