@@ -1,0 +1,9 @@
+fastapi
+flask
+waitress
+uvicorn
+requests
+pymysql
+pystray
+pillow
+lark-oapi
