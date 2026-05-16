@@ -36,8 +36,6 @@ MySQL Database
 MySQL Database
 
 # Suggested Folder Structure
-
-# อธิบายแต่ละไฟล์
 ```text
 project/
 │
@@ -60,6 +58,7 @@ project/
 ├── requirements.txt
 └── README.md
 ```
+# อธิบายแต่ละไฟล์
 `main.py`
 
 Main Controller ของระบบ
