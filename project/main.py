@@ -3,6 +3,7 @@ import threading
 import configparser
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
+from collections import deque
 import time
 from controller.controller_api import (
     register_controller,
@@ -14,6 +15,7 @@ from flask import Flask, request, jsonify
 from waitress import serve
 
 import json
+import re
 import lark_oapi as lark
 
 from core.jms_api import (
@@ -174,11 +176,6 @@ def feishu_event():
             event_id
         )
 
-        # LIMIT CACHE SIZE
-        if len(controller_instance.processed_events) > 1000:
-
-            controller_instance.processed_events.clear()
-
     message = event.get("message", {})
     chat_id = message.get("chat_id")
     #sender = event.get("sender", {})
@@ -194,8 +191,14 @@ def feishu_event():
         content_json = json.loads(content_raw)
 
         text = content_json.get("text", "").strip()
+        text = text.replace("\\n", "\n")
 
         lower_text = text.lower()
+        normalized_lower_text = re.sub(
+            r"\s+",
+            " ",
+            lower_text
+        ).strip()
 
         # ====================================
         # REQUIRE BOT MENTION
@@ -306,8 +309,6 @@ def feishu_event():
         "ปลดล็อค",
         "ปลดล้อค",
         "unlock",
-        "ล็อค",
-        "ล๊อค",
         "ระงับ",
         "โดนระงับ",
         "เข้าไม่ได้",
@@ -329,8 +330,6 @@ def feishu_event():
         "เปลี่ยนแพลนดึก",
     ]
 
-    import re
-
     raw_command_lines = [
         line.strip()
         for line in text.splitlines()
@@ -344,15 +343,22 @@ def feishu_event():
         r"^(?:\d{8}|[0-9A-Z]{10,20})$"
     )
 
+    current_block = []
     command_lines = []
-    current_block = ""
 
     for line in raw_command_lines:
 
         lower_line = line.lower()
 
+        normalized_lower_line = re.sub(
+            r"\s+",
+            " ",
+            lower_line
+        ).strip()
+
         has_line_keyword = any(
-            keyword in lower_line
+            (keyword in lower_line)
+            or (keyword in normalized_lower_line)
             for keyword in command_keywords
         )
 
@@ -362,38 +368,36 @@ def feishu_event():
             )
         )
 
+        # เริ่ม command ใหม่
         if has_line_keyword:
 
             if current_block:
+
                 command_lines.append(
-                    current_block
+                    "\n".join(current_block)
                 )
 
-            current_block = line
+            current_block = [line]
 
             continue
 
+        # user ต่อท้าย command เดิม
         if is_user_only and current_block:
 
-            current_block = (
-                f"{current_block}\n{line}"
-            )
+            current_block.append(line)
 
             continue
 
-        if current_block:
-            command_lines.append(
-                current_block
-            )
-            current_block = ""
-
-        command_lines.append(line)
-
+    # ปิด block สุดท้าย
     if current_block:
-        command_lines.append(current_block)
+
+        command_lines.append(
+            "\n".join(current_block)
+        )
 
     has_keyword = any(
-        keyword in lower_text
+        (keyword in lower_text)
+        or (keyword in normalized_lower_text)
         for keyword in command_keywords
     )
 
@@ -405,8 +409,6 @@ def feishu_event():
     )
 
     if not has_keyword and not has_user:
-
-        send_help()
 
         return jsonify({
             "success": True,
@@ -420,6 +422,11 @@ def feishu_event():
     for command_text in command_lines:
 
         command_lower = command_text.lower()
+        normalized_command_lower = re.sub(
+            r"\s+",
+            " ",
+            command_lower
+        ).strip()
 
         # ====================================
         # JMS COMMAND
@@ -451,30 +458,18 @@ def feishu_event():
             processed_any = True
             continue
 
-        # ====================================
-        # DWS COMMAND
-        # ====================================
-        dwsa_keywords = [
-            "dwsa",
-            "กะบ่าย",
-            "แพลนบ่าย",
-            "เปลี่ยนกะบ่าย",
-            "เปลี่ยนแพลนบ่าย",
-        ]
-
-        dwsb_keywords = [
-            "dwsb",
-            "กะดึก",
-            "แพลนดึก",
-            "เปลี่ยนกะดึก",
-            "เปลี่ยนแพลนดึก",
-        ]
-
         target_plan = None
 
-        if any(k in command_lower for k in dwsa_keywords):
+        if re.search(
+            r"(เปลี่ยน|สลับ).*(บ่าย|dwsa)",
+            normalized_command_lower
+        ):
             target_plan = "DWSA"
-        elif any(k in command_lower for k in dwsb_keywords):
+
+        elif re.search(
+            r"(เปลี่ยน|สลับ).*(ดึก|dwsb)",
+            normalized_command_lower
+        ):
             target_plan = "DWSB"
 
         if target_plan:
@@ -775,7 +770,7 @@ class ControllerGUI:
 
         self.jms_running = False
 
-        self.processed_events = set()
+        self.processed_events = deque(maxlen=1000)
 
         self.load_dynamic_plans()
 
@@ -1211,20 +1206,6 @@ class ControllerGUI:
             column=2,
             padx=5,
             pady=5
-        )
-
-        self.btn_refresh = ttk.Button(
-            self.control_frame,
-            text="Refresh Status",
-            style="Black.TButton",
-            width=12,
-            command=self.refresh_status
-        )
-
-        self.btn_refresh.grid(
-            row=0,
-            column=2,
-            padx=5
         )
 
         # =========================
@@ -2191,9 +2172,12 @@ class ControllerGUI:
         if not self.jms_running:
             return False
 
-        import re
-
         lower_text = text.lower()
+        normalized_lower_text = re.sub(
+            r"\s+",
+            " ",
+            lower_text
+        ).strip()
 
         # =====================================
         # KEYWORDS
@@ -2245,9 +2229,6 @@ class ControllerGUI:
             "ปลดล้อค",
             "unlock",
 
-            "ล็อค",
-            "ล๊อค",
-
             "ระงับ",
             "โดนระงับ",
 
@@ -2279,21 +2260,24 @@ class ControllerGUI:
         command_type = None
 
         if any(
-            keyword in lower_text
+            (keyword in lower_text)
+            or (keyword in normalized_lower_text)
             for keyword in app_keywords
         ):
 
             command_type = "APP"
 
         elif any(
-            keyword in lower_text
+            (keyword in lower_text)
+            or (keyword in normalized_lower_text)
             for keyword in jms_keywords
         ):
 
             command_type = "JMS"
 
         elif any(
-            keyword in lower_text
+            (keyword in lower_text)
+            or (keyword in normalized_lower_text)
             for keyword in enable_keywords
         ):
 
@@ -2302,8 +2286,9 @@ class ControllerGUI:
         elif (
             staff_list
             and any(
-                keyword in lower_text
-                for keyword in [
+                    (keyword in lower_text)
+                    or (keyword in normalized_lower_text)
+                    for keyword in [
                     "ล็อค",
                     "ล๊อค",
                     "โดนล็อค",
@@ -2524,10 +2509,26 @@ class ControllerGUI:
             )
 
 
-        reply_feishu_message(
-            message_id,
-            final_message
-        )
+        if len(final_message) > 3000:
+
+            chunks = [
+                final_message[i:i+3000]
+                for i in range(0, len(final_message), 3000)
+            ]
+
+            for chunk in chunks:
+
+                reply_feishu_message(
+                    message_id,
+                    chunk
+                )
+
+        else:
+
+            reply_feishu_message(
+                message_id,
+                final_message
+            )
 
         return True
 
