@@ -14,6 +14,7 @@ from flask import Flask, request, jsonify
 from waitress import serve
 
 import json
+import re
 import lark_oapi as lark
 
 from core.jms_api import (
@@ -194,8 +195,14 @@ def feishu_event():
         content_json = json.loads(content_raw)
 
         text = content_json.get("text", "").strip()
+        text = text.replace("\\n", "\n")
 
         lower_text = text.lower()
+        normalized_lower_text = re.sub(
+            r"\s+",
+            " ",
+            lower_text
+        ).strip()
 
         # ====================================
         # REQUIRE BOT MENTION
@@ -329,10 +336,78 @@ def feishu_event():
         "เปลี่ยนแพลนดึก",
     ]
 
-    import re
+    raw_command_lines = [
+        line.strip()
+        for line in text.splitlines()
+        if line.strip()
+    ]
+
+    if not raw_command_lines:
+        raw_command_lines = [text]
+
+    user_only_pattern = re.compile(
+        r"^(?:\d{8}|[0-9A-Z]{10,20})$"
+    )
+
+    command_lines = []
+    current_block = ""
+
+    for line in raw_command_lines:
+
+        lower_line = line.lower()
+
+        normalized_lower_line = re.sub(
+            r"\s+",
+            " ",
+            lower_line
+        ).strip()
+
+        has_line_keyword = any(
+            (keyword in lower_line)
+            or (keyword in normalized_lower_line)
+            for keyword in command_keywords
+        )
+
+        is_user_only = bool(
+            user_only_pattern.fullmatch(
+                line.upper()
+            )
+        )
+
+        if has_line_keyword:
+
+            if current_block:
+                command_lines.append(
+                    current_block
+                )
+
+            current_block = line
+
+            continue
+
+        if is_user_only and current_block:
+
+            current_block = (
+                f"{current_block}\n{line}"
+            )
+
+            continue
+
+        if current_block:
+            command_lines.append(
+                current_block
+            )
+            current_block = ""
+
+        command_lines.append(line)
+
+    if current_block:
+        command_lines.append(current_block)
+
     has_keyword = any(
-    keyword in lower_text
-    for keyword in command_keywords
+        (keyword in lower_text)
+        or (keyword in normalized_lower_text)
+        for keyword in command_keywords
     )
 
     has_user = bool(
@@ -351,108 +426,125 @@ def feishu_event():
             "message": "ignored"
         })
     # ====================================
-    # COMMAND
+    # COMMAND (MULTI-LINE SUPPORT)
     # ====================================
+    processed_any = False
+
+    for command_text in command_lines:
+
+        command_lower = command_text.lower()
+        normalized_command_lower = re.sub(
+            r"\s+",
+            " ",
+            command_lower
+        ).strip()
+
         # ====================================
-    # JMS COMMAND
-    # ====================================
-    try:
+        # JMS COMMAND
+        # ====================================
+        try:
 
-        handled = controller_instance.handle_jms_command(
-            text,
-            chat_id,
-            message_id,
-            parent_id,
-            root_id
-        )
-
-    except Exception as e:
-
-        print("JMS ERROR:", e)
-
-        controller_instance.jms_log(
-            f"[ERROR] {e}"
-        )
-
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        })
-
-    if handled:
-
-        return jsonify({
-            "success": True,
-            "message": "ignored"
-        })
-    
-    # ====================================
-    # DWS COMMAND
-    # ====================================
-
-    lower_text = text.lower()
-
-    dwsa_keywords = [
-        "dwsa",
-        "กะบ่าย",
-        "แพลนบ่าย",
-        "เปลี่ยนกะบ่าย",
-        "เปลี่ยนแพลนบ่าย",
-    ]
-
-    dwsb_keywords = [
-        "dwsb",
-        "กะดึก",
-        "แพลนดึก",
-        "เปลี่ยนกะดึก",
-        "เปลี่ยนแพลนดึก",
-    ]
-
-    target_plan = None
-
-    if any(k in lower_text for k in dwsa_keywords):
-
-        target_plan = "DWSA"
-
-    elif any(k in lower_text for k in dwsb_keywords):
-
-        target_plan = "DWSB"
-
-    if target_plan:
-
-        controller_instance.switch_plan(
-            target_plan
-        )
-
-        reply_feishu_message(
-            message_id,
-            (
-                f"PLAN : {target_plan}\n"
-                f"ดำเนินการเปลี่ยนแพลนเสร็จเรียบร้อย\n"
-                f"ปิดโปรแกรมแล้วเข้าใหม่อีกครั้ง"
+            handled = controller_instance.handle_jms_command(
+                command_text,
+                chat_id,
+                message_id,
+                parent_id,
+                root_id
             )
-        )
 
-        controller_instance.add_log(
-            f"[FEISHU] SWITCH -> {target_plan}"
-        )
+        except Exception as e:
 
+            print("JMS ERROR:", e)
+
+            controller_instance.jms_log(
+                f"[ERROR] {e}"
+            )
+
+            return jsonify({
+                "success": False,
+                "error": str(e)
+            })
+
+        if handled:
+            processed_any = True
+            continue
+
+        # ====================================
+        # DWS COMMAND
+        # ====================================
+        dwsa_keywords = [
+            "dwsa",
+            "กะบ่าย",
+            "แพลนบ่าย",
+            "เปลี่ยนกะบ่าย",
+            "เปลี่ยนแพลนบ่าย",
+        ]
+
+        dwsb_keywords = [
+            "dwsb",
+            "กะดึก",
+            "แพลนดึก",
+            "เปลี่ยนกะดึก",
+            "เปลี่ยนแพลนดึก",
+        ]
+
+        target_plan = None
+
+        if any(
+            (k in command_lower)
+            or (k in normalized_command_lower)
+            for k in dwsa_keywords
+        ):
+            target_plan = "DWSA"
+        elif any(
+            (k in command_lower)
+            or (k in normalized_command_lower)
+            for k in dwsb_keywords
+        ):
+            target_plan = "DWSB"
+
+        if target_plan:
+
+            controller_instance.switch_plan(
+                target_plan
+            )
+
+            reply_feishu_message(
+                message_id,
+                (
+                    f"PLAN : {target_plan}\n"
+                    f"ดำเนินการเปลี่ยนแพลนเสร็จเรียบร้อย\n"
+                    f"ปิดโปรแกรมแล้วเข้าใหม่อีกครั้ง"
+                )
+            )
+
+            controller_instance.add_log(
+                f"[FEISHU] SWITCH -> {target_plan}"
+            )
+
+            processed_any = True
+            continue
+
+        if "/status" in command_lower:
+
+            reply_feishu_message(
+                message_id,
+                "🟢 Controller Online"
+            )
+
+            processed_any = True
+
+    if processed_any:
         return jsonify({
             "success": True,
             "message": "ignored"
         })
 
-    elif "/status" in lower_text:
-     
-        reply_feishu_message(
-            message_id,
-            "🟢 Controller Online"
-        )
-
-        return jsonify({
-            "success": True,
-            "message": "ignored"
-        })
+    send_help()
+    return jsonify({
+        "success": True,
+        "message": "ignored"
+    })
 
 @bot_app.route("/switch_plan", methods=["POST"])
 
@@ -2125,9 +2217,12 @@ class ControllerGUI:
         if not self.jms_running:
             return False
 
-        import re
-
         lower_text = text.lower()
+        normalized_lower_text = re.sub(
+            r"\s+",
+            " ",
+            lower_text
+        ).strip()
 
         # =====================================
         # KEYWORDS
@@ -2213,21 +2308,24 @@ class ControllerGUI:
         command_type = None
 
         if any(
-            keyword in lower_text
+            (keyword in lower_text)
+            or (keyword in normalized_lower_text)
             for keyword in app_keywords
         ):
 
             command_type = "APP"
 
         elif any(
-            keyword in lower_text
+            (keyword in lower_text)
+            or (keyword in normalized_lower_text)
             for keyword in jms_keywords
         ):
 
             command_type = "JMS"
 
         elif any(
-            keyword in lower_text
+            (keyword in lower_text)
+            or (keyword in normalized_lower_text)
             for keyword in enable_keywords
         ):
 
@@ -2236,8 +2334,9 @@ class ControllerGUI:
         elif (
             staff_list
             and any(
-                keyword in lower_text
-                for keyword in [
+                    (keyword in lower_text)
+                    or (keyword in normalized_lower_text)
+                    for keyword in [
                     "ล็อค",
                     "ล๊อค",
                     "โดนล็อค",
