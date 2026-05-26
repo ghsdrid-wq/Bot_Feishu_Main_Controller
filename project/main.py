@@ -172,10 +172,9 @@ def feishu_event():
                 "message": "duplicate_skip"
             })
 
-        controller_instance.processed_events.add(
+        controller_instance.processed_events.append(
             event_id
         )
-
     message = event.get("message", {})
     chat_id = message.get("chat_id")
     #sender = event.get("sender", {})
@@ -330,90 +329,79 @@ def feishu_event():
         "เปลี่ยนแพลนดึก",
     ]
 
-    raw_command_lines = [
+    # ====================================
+    # FLEXIBLE COMMAND PARSER
+    # ====================================
+
+    command_lines = []
+
+    lines = [
         line.strip()
         for line in text.splitlines()
         if line.strip()
     ]
 
-    if not raw_command_lines:
-        raw_command_lines = [text]
+    if not lines:
+        lines = [text]
 
-    user_only_pattern = re.compile(
-        r"^(?:\d{8}|[0-9A-Z]{10,20})$"
-    )
+    current_command = []
 
-    current_block = []
-    command_lines = []
-
-    for line in raw_command_lines:
+    for line in lines:
 
         lower_line = line.lower()
 
-        normalized_lower_line = re.sub(
-            r"\s+",
-            " ",
-            lower_line
-        ).strip()
-
-        has_line_keyword = any(
-            (keyword in lower_line)
-            or (keyword in normalized_lower_line)
+        has_keyword = any(
+            keyword in lower_line
             for keyword in command_keywords
         )
 
-        is_user_only = bool(
-            user_only_pattern.fullmatch(
+        has_user = bool(
+            re.search(
+                r"\b(?:\d{8}|[0-9A-Z]{10,20})\b",
                 line.upper()
             )
         )
 
-        # เริ่ม command ใหม่
-        if has_line_keyword:
+        # =========================
+        # START NEW COMMAND
+        # =========================
+        if has_keyword:
 
-            if current_block:
-
+            if current_command:
                 command_lines.append(
-                    "\n".join(current_block)
+                    "\n".join(current_command)
                 )
 
-            current_block = [line]
+            current_command = [line]
+            continue
+
+        # =========================
+        # USER LINE
+        # =========================
+        if has_user:
+
+            # ยังไม่มี command มาก่อน
+            if not current_command:
+
+                current_command = [line]
+
+            else:
+
+                current_command.append(line)
 
             continue
 
-        # user ต่อท้าย command เดิม
-        if is_user_only and current_block:
-
-            current_block.append(line)
-
-            continue
-
-    # ปิด block สุดท้าย
-    if current_block:
+    # append last
+    if current_command:
 
         command_lines.append(
-            "\n".join(current_block)
+            "\n".join(current_command)
         )
 
-    has_keyword = any(
-        (keyword in lower_text)
-        or (keyword in normalized_lower_text)
-        for keyword in command_keywords
-    )
+    # fallback
+    if not command_lines:
 
-    has_user = bool(
-        re.search(
-            r"\b(?:\d{8}|[0-9A-Z]{10,20})\b",
-            text.upper()
-        )
-    )
-
-    if not has_keyword and not has_user:
-
-        return jsonify({
-            "success": True,
-            "message": "ignored"
-        })
+        command_lines = [text]
     # ====================================
     # COMMAND (MULTI-LINE SUPPORT)
     # ====================================
@@ -422,10 +410,16 @@ def feishu_event():
     for command_text in command_lines:
 
         command_lower = command_text.lower()
+        # รองรับ user อยู่หน้า command
+        parts = command_text.splitlines()
+
+        merged_text = " ".join(parts)
+
+        command_lower = merged_text.lower()
         normalized_command_lower = re.sub(
             r"\s+",
             " ",
-            command_lower
+            merged_text.lower()
         ).strip()
 
         # ====================================
